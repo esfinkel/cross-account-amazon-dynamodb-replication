@@ -1,6 +1,14 @@
+import base64
 import os
 import json
 import boto3
+
+def decode_bytes_if_present(items_by_type):
+    # Look for binary values, b64 decode them back into bytes
+    for key, value_dict in items_by_type.items():
+        for value_type, value in value_dict.items():
+            if value_type == "B":
+                items_by_type[key] = {value_type: base64.b64decode(value)}
 
 def lambda_handler(event, context):
 
@@ -25,9 +33,13 @@ def lambda_handler(event, context):
         event_name = record['eventName']
         
         if event_name == 'REMOVE':
-            response = dynamodb.delete_item(TableName=target_ddb_name,Key=record['dynamodb']['Keys'])
+            keys_to_delete = record['dynamodb']['Keys']
+            decode_bytes_if_present(keys_to_delete)
+            response = dynamodb.delete_item(TableName=target_ddb_name,Key=keys_to_delete)
         else:
-            response = dynamodb.put_item(TableName=target_ddb_name,Item=record['dynamodb']['NewImage'])
+            item_to_put = record['dynamodb']['NewImage']
+            decode_bytes_if_present(item_to_put)
+            response = dynamodb.put_item(TableName=target_ddb_name,Item=item_to_put)
             
 def get_credentials(role_arn):
     # create an STS client object that represents a live connection to the 
