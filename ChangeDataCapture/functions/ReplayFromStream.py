@@ -3,7 +3,7 @@ import os
 import json
 import boto3
 
-def decode_bytes_if_present(items_by_type):
+def decode_bytes_if_present(items_by_type: dict) -> None:
     # Look for binary values, b64 decode them back into bytes
     for key, value_dict in items_by_type.items():
         for value_type, value in value_dict.items():
